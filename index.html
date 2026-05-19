@@ -520,14 +520,20 @@ function submitForm() {
   fetch(`https://api.trello.com/1/cards?${params.toString()}`, {
     method: 'POST',
   })
-  .then(r => { if(r.ok || r.status === 200) { showToast('Trello card created!'); } else { showToast('Saved locally — Trello sync failed'); } })
-  .catch(() => showToast('Saved locally — Trello sync failed'));
+  .then(r => {
+    if (r.ok) {
+      showToast('Trello card created!');
+    } else {
+      r.text().then(t => showToast('Trello error: ' + r.status + ' ' + t.substring(0,60)));
+    }
+  })
+  .catch(err => showToast('Trello failed: ' + err.message));
 }
 
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(() => t.classList.remove('show'), 5000);
 }
 
 function resetForm() {
