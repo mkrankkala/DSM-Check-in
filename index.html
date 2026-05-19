@@ -442,16 +442,16 @@ function submitForm() {
   // Persist next job number
   localStorage.setItem('nextJobNum', String(record.jobNum + 1));
   showToast('Record saved!');
-  resetForm();
   } catch(err) { showToast('Error: ' + err.message); return; }
 
-  // Send directly to Trello
+  // Send directly to Trello (outside try/catch so errors show separately)
   const trelloKey = localStorage.getItem('trelloKey') || '';
   const trelloToken = localStorage.getItem('trelloToken') || '';
   const trelloListId = localStorage.getItem('trelloListId') || '';
 
   if (!trelloKey || !trelloToken || !trelloListId) {
     showToast('Trello not configured — check Settings');
+    resetForm();
     return;
   }
 
@@ -527,7 +527,8 @@ function submitForm() {
       r.text().then(t => showToast('Trello error: ' + r.status + ' ' + t.substring(0,60)));
     }
   })
-  .catch(err => showToast('Trello failed: ' + err.message));
+  .catch(err => showToast('Trello failed: ' + err.message))
+  .finally(() => resetForm());
 }
 
 function showToast(msg) {
