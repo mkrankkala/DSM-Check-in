@@ -453,12 +453,10 @@ function submitForm() {
   const trelloListId = localStorage.getItem('trelloListId') || '';
 
   if (!trelloKey || !trelloToken || !trelloListId) {
-    alert('Trello not configured — check Settings');
+    showToast('Trello not configured — check Settings');
     resetForm();
     return;
   }
-
-  alert('Trello credentials found! Key starts with: ' + trelloKey.substring(0,6));
 
   const cardName = `Job #${record.jobNum} — ${record.custName} | ${[record.vehYear, record.vehMake, record.vehModel].filter(Boolean).join(' ')}`;
 
