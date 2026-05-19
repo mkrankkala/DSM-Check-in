@@ -390,61 +390,64 @@ function getChecked(containerId) {
 }
 
 function submitForm() {
-  try {
   const custName = document.getElementById('custName').value.trim();
   if (!custName) { showToast('Please enter a customer name'); return; }
 
-  const record = {
-    id: Date.now(),
-    jobNum: parseInt(document.getElementById('jobNum').value) || 1,
-    cartNum: document.getElementById('cartNum').value,
-    ts: new Date().toISOString(),
-    dateReceived: document.getElementById('dateReceived').value,
-    completionDate: document.getElementById('completionDate').value,
-    rushJob: document.getElementById('rushJob').value,
-    dkCustomer: document.getElementById('dkCustomer').value,
-    custName,
-    custPhone: document.getElementById('custPhone').value,
-    custEmail: document.getElementById('custEmail').value,
-    vehYear: document.getElementById('vehYear').value,
-    vehMake: document.getElementById('vehMake').value,
-    vehModel: document.getElementById('vehModel').value,
-    shockBrand: document.getElementById('shockBrand').value,
-    shockTypes: getChecked('shockTypes'),
-    shockSpecs: document.getElementById('shockSpecs').value,
-    serviceItems: getChecked('serviceItems'),
-    desiredPSI: document.getElementById('desiredPSI').value,
-    rebuildNotes: document.getElementById('rebuildNotes').value,
-    coatingNotes: document.getElementById('coatingNotes').value,
-    desiredSpring: document.getElementById('desiredSpring').value,
-    otherNotes: document.getElementById('otherNotes').value,
-    springLen: document.getElementById('springLen').value,
-    exposedShaftLen: document.getElementById('exposedShaftLen').value,
-    coilLen: document.getElementById('coilLen').value,
-    crossover: document.getElementById('crossover').value,
-    resDims: document.getElementById('resDims').value,
-    bodyCondition: document.getElementById('bodyCondition').value,
-    shaftCondition: document.getElementById('shaftCondition').value,
-    sealsCondition: document.getElementById('sealsCondition').value,
-    corrosion: document.getElementById('corrosion').value,
-    leaking: document.getElementById('leaking').value,
-    physicalDamage: document.getElementById('physicalDamage').value,
-    inspectionNotes: document.getElementById('inspectionNotes').value,
-    recNotes: document.getElementById('recNotes').value,
-    custApproval: document.getElementById('custApproval').value,
-    approvalNotes: document.getElementById('approvalNotes').value,
-  };
+  let record;
+  try {
+    record = {
+      id: Date.now(),
+      jobNum: parseInt(document.getElementById('jobNum').value) || 1,
+      cartNum: document.getElementById('cartNum').value,
+      ts: new Date().toISOString(),
+      dateReceived: document.getElementById('dateReceived').value,
+      completionDate: document.getElementById('completionDate').value,
+      rushJob: document.getElementById('rushJob').value,
+      dkCustomer: document.getElementById('dkCustomer').value,
+      custName,
+      custPhone: document.getElementById('custPhone').value,
+      custEmail: document.getElementById('custEmail').value,
+      vehYear: document.getElementById('vehYear').value,
+      vehMake: document.getElementById('vehMake').value,
+      vehModel: document.getElementById('vehModel').value,
+      shockBrand: document.getElementById('shockBrand').value,
+      shockTypes: getChecked('shockTypes'),
+      shockSpecs: document.getElementById('shockSpecs').value,
+      serviceItems: getChecked('serviceItems'),
+      desiredPSI: document.getElementById('desiredPSI').value,
+      rebuildNotes: document.getElementById('rebuildNotes').value,
+      coatingNotes: document.getElementById('coatingNotes').value,
+      desiredSpring: document.getElementById('desiredSpring').value,
+      otherNotes: document.getElementById('otherNotes').value,
+      springLen: document.getElementById('springLen').value,
+      exposedShaftLen: document.getElementById('exposedShaftLen').value,
+      coilLen: document.getElementById('coilLen').value,
+      crossover: document.getElementById('crossover').value,
+      resDims: document.getElementById('resDims').value,
+      bodyCondition: document.getElementById('bodyCondition').value,
+      shaftCondition: document.getElementById('shaftCondition').value,
+      sealsCondition: document.getElementById('sealsCondition').value,
+      corrosion: document.getElementById('corrosion').value,
+      leaking: document.getElementById('leaking').value,
+      physicalDamage: document.getElementById('physicalDamage').value,
+      inspectionNotes: document.getElementById('inspectionNotes').value,
+      recNotes: document.getElementById('recNotes').value,
+      custApproval: document.getElementById('custApproval').value,
+      approvalNotes: document.getElementById('approvalNotes').value,
+    };
 
-  let existing = [];
-  try { existing = JSON.parse(localStorage.getItem('checkins') || '[]'); } catch(e) {}
-  existing.push(record);
-  localStorage.setItem('checkins', JSON.stringify(existing));
-  // Persist next job number
-  localStorage.setItem('nextJobNum', String(record.jobNum + 1));
-  showToast('Record saved!');
-  } catch(err) { showToast('Error: ' + err.message); return; }
+    let existing = [];
+    try { existing = JSON.parse(localStorage.getItem('checkins') || '[]'); } catch(e) {}
+    existing.push(record);
+    localStorage.setItem('checkins', JSON.stringify(existing));
+    localStorage.setItem('nextJobNum', String(record.jobNum + 1));
+    showToast('Record saved!');
+  } catch(err) {
+    showToast('Error: ' + err.message);
+    return;
+  }
 
-  // Send directly to Trello (outside try/catch so errors show separately)
+  // Send directly to Trello
   const trelloKey = localStorage.getItem('trelloKey') || '';
   const trelloToken = localStorage.getItem('trelloToken') || '';
   const trelloListId = localStorage.getItem('trelloListId') || '';
