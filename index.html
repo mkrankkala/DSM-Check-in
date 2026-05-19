@@ -529,8 +529,59 @@ function submitForm() {
     } else {
       r.text().then(t => showToast('Trello error: ' + r.status + ' ' + t.substring(0,60)));
     }
+    return r.ok ? r.json() : null;
   })
-  .catch(err => showToast('Trello failed: ' + err.message))
+  .then(card => {
+    if (!card) return;
+    const cardId = card.id;
+    const base = `https://api.trello.com/1/cards/${cardId}/customField`;
+    const h = { 'Content-Type': 'application/json' };
+    const auth = `key=${trelloKey}&token=${trelloToken}`;
+
+    // Helper to set a text field
+    const setText = (fieldId, value) => fetch(`${base}/${fieldId}/item?${auth}`, {
+      method: 'PUT', headers: h,
+      body: JSON.stringify({ value: { text: String(value || '') } })
+    });
+
+    // Helper to set a date field
+    const setDate = (fieldId, value) => fetch(`${base}/${fieldId}/item?${auth}`, {
+      method: 'PUT', headers: h,
+      body: JSON.stringify({ value: { date: value ? new Date(value).toISOString() : '' } })
+    });
+
+    // Helper to set a checkbox field
+    const setCheck = (fieldId, value) => fetch(`${base}/${fieldId}/item?${auth}`, {
+      method: 'PUT', headers: h,
+      body: JSON.stringify({ value: { checked: value === 'Yes' ? 'true' : 'false' } })
+    });
+
+    // Helper to set a list field by matching option text
+    const cartOptions = {
+      '001':'6a074ca71110a7452f0ac536','002':'6a074ca71110a7452f0ac537',
+      '003':'6a074ca71110a7452f0ac538','004':'6a074ca71110a7452f0ac539',
+      '005':'6a074ca71110a7452f0ac53a','006':'6a074ca71110a7452f0ac53b',
+      '007':'6a074ca71110a7452f0ac53c','008':'6a074ca71110a7452f0ac53d',
+      '009':'6a074ca71110a7452f0ac53e','010':'6a074ca71110a7452f0ac53f',
+      '011':'6a074ca71110a7452f0ac540'
+    };
+    const cartOptionId = cartOptions[record.cartNum] || null;
+    if (cartOptionId) {
+      fetch(`${base}/6a074ca71110a7452f0ac535/item?${auth}`, {
+        method: 'PUT', headers: h,
+        body: JSON.stringify({ idValue: cartOptionId })
+      });
+    }
+
+    setText('6a072edbd422aaa5fd92e542', record.custName);
+    setText('6a072efc3147a9b41d02dbba', record.custPhone);
+    setText('6a0ce8f24e8a7b066a91351b', record.custEmail);
+    setText('6a072f070c5a35f837f85dc0', [record.vehYear, record.vehMake, record.vehModel].filter(Boolean).join(' '));
+    setText('6a072f18d2c66aa12f61c0a9', record.shockTypes ? record.shockTypes.join(', ') : '');
+    setDate('6a079a3ec3392a266bf6e7d8', record.dateReceived);
+    setDate('6a072f327950081d5c1cce8e', record.completionDate);
+    setCheck('6a072fac5df7377e432a1139', record.dkCustomer);
+  })
   .finally(() => resetForm());
 }
 
