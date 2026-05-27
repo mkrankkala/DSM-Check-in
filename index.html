@@ -541,7 +541,6 @@ function submitForm() {
   const cardDesc = [
     `📋 JOB DETAILS`,
     `Rush Job: ${record.rushJob || '—'}`,
-    `DK Build's Customer: ${record.dkCustomer || '—'}`,
     ``,
     `🔧 SHOCK DETAILS`,
     `Brand: ${record.shockBrand || '—'}`,
@@ -566,7 +565,6 @@ function submitForm() {
     ``,
     `✅ RECOMMENDED SERVICE`,
     record.recNotes ? `Notes: ${record.recNotes}` : '—',
-    `Customer Approval: ${record.custApproval || '—'}`,
     record.approvalNotes ? `Approval Notes: ${record.approvalNotes}` : '',
   ].filter(line => line !== '').join('\n');
 
@@ -620,7 +618,7 @@ function submitForm() {
     // Helper to set a checkbox field
     const setCheck = (fieldId, value) => fetch(`${base}/${fieldId}/item?${auth}`, {
       method: 'PUT', headers: h,
-      body: JSON.stringify({ value: { checked: value === 'Yes' ? 'true' : 'false' } })
+      body: JSON.stringify({ value: { checked: value === 'Yes' } })
     });
 
     // Helper to set a list field by matching option text
@@ -648,6 +646,7 @@ function submitForm() {
     setDate('6a079a3ec3392a266bf6e7d8', record.dateReceived);
     setDate('6a072f327950081d5c1cce8e', record.completionDate);
     setCheck('6a072fac5df7377e432a1139', record.dkCustomer);
+    setCheck('6a0ce93201cd40ba61314c19', record.custApproval === 'Approved' ? 'Yes' : 'No');
   })
   .finally(() => resetForm());
 }
