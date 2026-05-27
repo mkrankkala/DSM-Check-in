@@ -253,7 +253,7 @@
     </div>
     <div class="field-row">
       <div class="field"><label>Bearing condition</label><select id="sealsCondition"><option value="">-- Select --</option><option>Good</option><option>Questionable (potential replacement)</option><option>Bad (needs replacement)</option></select></div>
-      <div class="field"><label>Spring divider condition</label><select id="corrosion"><option value="">-- Select --</option><option>Yes</option><option>No</option><option>N/A</option></select></div>
+      <div class="field"><label>Spring divider condition</label><select id="corrosion"><option value="">-- Select --</option><option>Good</option><option>Questionable (potential replacement)</option><option>Bad (needs replacement)</option><option>N/A</option></select></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Leaking</label><select id="leaking"><option value="">-- Select --</option><option>Yes</option><option>No</option></select></div>
@@ -263,6 +263,18 @@
       <label>Inspection notes</label>
       <textarea id="inspectionNotes" rows="3" placeholder="Any additional observations, damage details, or concerns…"></textarea>
     </div>
+  </div>
+
+  <!-- Shock Photos -->
+  <p class="section-title">Shock photos</p>
+  <div class="card">
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Photos will attach directly to the Trello card on submission</div>
+    <div id="photoGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px"></div>
+    <div onclick="document.getElementById('photoInput').click()" style="border:2px dashed var(--gold);border-radius:10px;padding:16px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+      <span style="font-size:24px;color:var(--gold)">+</span>
+      <span style="font-size:13px;color:var(--text-muted)">Add photo</span>
+    </div>
+    <input type="file" id="photoInput" accept="image/*" multiple capture="environment" style="display:none" onchange="handlePhotos(event)">
   </div>
 
   <!-- Recommended Service -->
@@ -291,19 +303,28 @@
 
   <!-- Shock Photos -->
 
-  <!-- Measurements -->
-  <p class="section-title">Measurements</p>
+  <!-- Parts Required -->
+  <p class="section-title">Parts required</p>
   <div class="card">
-    <div class="field-row">
-      <div class="field"><label>Spring length</label><input type="text" id="springLen" placeholder='e.g. 14.5"' autocomplete="off"></div>
-      <div class="field"><label>Exposed shaft length</label><input type="text" id="exposedShaftLen" placeholder='e.g. 12.0"' autocomplete="off"></div>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <div style="flex:1;max-width:48%">
+        <div class="service-item" id="partsYes" onclick="togglePartsYes(this)" style="justify-content:center">
+          <div class="check-box"><div class="check-mark"></div></div>
+          <span class="service-label">(Y) Parts needed</span>
+        </div>
+      </div>
+      <div style="flex:1;max-width:48%">
+        <div class="service-item" id="partsNo" onclick="togglePartsNo(this)" style="justify-content:center">
+          <div class="check-box"><div class="check-mark"></div></div>
+          <span class="service-label">(N) Parts not needed</span>
+        </div>
+      </div>
     </div>
-    <div class="field-row">
-      <div class="field"><label>Individual coil length</label><input type="text" id="coilLen" placeholder='e.g. 8.0"' autocomplete="off"></div>
-      <div class="field"><label>Crossover measurement</label><input type="text" id="crossover" placeholder='e.g. 2.25"' autocomplete="off"></div>
-    </div>
-    <div class="field-row single">
-      <div class="field"><label>Reservoir sticker dimensions</label><input type="text" id="resDims" placeholder='e.g. 3" x 1.5"' autocomplete="off"></div>
+    <div class="expandable" id="partsDetails" style="margin-top:10px">
+      <div class="field">
+        <label>Parts notes</label>
+        <textarea id="partsNotes" rows="3" placeholder="List parts needed, order status, supplier…"></textarea>
+      </div>
     </div>
   </div>
 
@@ -333,6 +354,52 @@ function saveSettings() {
   localStorage.setItem('trelloListId', document.getElementById('settingListId').value.trim());
   closeSettings();
   showToast('Trello settings saved!');
+}
+
+let photos = []; // {name, base64, blob}
+
+function handlePhotos(e) {
+  Array.from(e.target.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      photos.push({ name: file.name, base64: ev.target.result, file });
+      renderPhotos();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderPhotos() {
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = '';
+  photos.forEach((p, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;aspect-ratio:1';
+    const img = document.createElement('img');
+    img.src = p.base64;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:10px;border:1px solid var(--border)';
+    const del = document.createElement('div');
+    del.innerHTML = '✕';
+    del.style.cssText = 'position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer';
+    del.onclick = () => { photos.splice(i, 1); renderPhotos(); };
+    wrap.appendChild(img);
+    wrap.appendChild(del);
+    grid.appendChild(wrap);
+  });
+}
+
+async function attachPhotosToCard(cardId, trelloKey, trelloToken) {
+  for (const p of photos) {
+    const formData = new FormData();
+    formData.append('file', p.file, p.name);
+    formData.append('key', trelloKey);
+    formData.append('token', trelloToken);
+    await fetch(`https://api.trello.com/1/cards/${cardId}/attachments`, {
+      method: 'POST',
+      body: formData
+    });
+  }
 }
 
 function getNextJobNum() {
@@ -378,6 +445,20 @@ function toggleOther(el) {
   else { d.classList.remove('visible'); document.getElementById('otherNotes').value = ''; }
 }
 
+function togglePartsYes(el) {
+  el.classList.toggle('checked');
+  document.getElementById('partsNo').classList.remove('checked');
+  const d = document.getElementById('partsDetails');
+  if (el.classList.contains('checked')) { d.classList.add('visible'); }
+  else { d.classList.remove('visible'); document.getElementById('partsNotes').value = ''; }
+}
+function togglePartsNo(el) {
+  el.classList.toggle('checked');
+  document.getElementById('partsYes').classList.remove('checked');
+  document.getElementById('partsDetails').classList.remove('visible');
+  document.getElementById('partsNotes').value = '';
+}
+
 function toggleApprovalDetails(el) {
   const d = document.getElementById('approvalDetails');
   if (el.value === 'Declined' || el.value === 'Needs follow up') { d.classList.add('visible'); }
@@ -419,11 +500,6 @@ function submitForm() {
       coatingNotes: document.getElementById('coatingNotes').value,
       desiredSpring: document.getElementById('desiredSpring').value,
       otherNotes: document.getElementById('otherNotes').value,
-      springLen: document.getElementById('springLen').value,
-      exposedShaftLen: document.getElementById('exposedShaftLen').value,
-      coilLen: document.getElementById('coilLen').value,
-      crossover: document.getElementById('crossover').value,
-      resDims: document.getElementById('resDims').value,
       bodyCondition: document.getElementById('bodyCondition').value,
       shaftCondition: document.getElementById('shaftCondition').value,
       sealsCondition: document.getElementById('sealsCondition').value,
@@ -434,6 +510,8 @@ function submitForm() {
       recNotes: document.getElementById('recNotes').value,
       custApproval: document.getElementById('custApproval').value,
       approvalNotes: document.getElementById('approvalNotes').value,
+      partsRequired: document.getElementById('partsYes').classList.contains('checked') ? 'Yes' : document.getElementById('partsNo').classList.contains('checked') ? 'No' : '',
+      partsNotes: document.getElementById('partsNotes').value,
     };
 
     let existing = [];
@@ -490,13 +568,6 @@ function submitForm() {
     record.recNotes ? `Notes: ${record.recNotes}` : '—',
     `Customer Approval: ${record.custApproval || '—'}`,
     record.approvalNotes ? `Approval Notes: ${record.approvalNotes}` : '',
-    ``,
-    `📏 MEASUREMENTS`,
-    `Spring Length: ${record.springLen || '—'}`,
-    `Exposed Shaft: ${record.exposedShaftLen || '—'}`,
-    `Individual Coil: ${record.coilLen || '—'}`,
-    `Crossover: ${record.crossover || '—'}`,
-    `Reservoir Sticker: ${record.resDims || '—'}`,
   ].filter(line => line !== '').join('\n');
 
   const params = new URLSearchParams({
@@ -521,6 +592,15 @@ function submitForm() {
   .then(card => {
     if (!card) return;
     const cardId = card.id;
+
+    // Attach photos
+    if (photos.length > 0) {
+      attachPhotosToCard(cardId, trelloKey, trelloToken)
+        .then(() => showToast('Card + ' + photos.length + ' photo(s) uploaded!'))
+        .catch(() => showToast('Card created — photo upload failed'));
+    } else {
+      showToast('Trello card created!');
+    }
     const base = `https://api.trello.com/1/cards/${cardId}/customField`;
     const h = { 'Content-Type': 'application/json' };
     const auth = `key=${trelloKey}&token=${trelloToken}`;
@@ -580,12 +660,16 @@ function showToast(msg) {
 
 function resetForm() {
   ['custName','custPhone','custEmail','completionDate','vehYear','vehMake','vehModel','shockBrand','shockSpecs',
-   'desiredPSI','rebuildNotes','coatingNotes','desiredSpring','otherNotes','springLen','exposedShaftLen',
-   'coilLen','crossover','resDims','inspectionNotes','recNotes','approvalNotes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+   'desiredPSI','rebuildNotes','coatingNotes','desiredSpring','otherNotes',
+   'inspectionNotes','recNotes','approvalNotes','partsNotes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('partsYes').classList.remove('checked');
+  document.getElementById('partsNo').classList.remove('checked');
+  document.getElementById('partsDetails').classList.remove('visible');
   document.getElementById('custApproval').value = '';
   document.getElementById('approvalDetails').classList.remove('visible');
   document.querySelectorAll('.check-item.checked,.service-item.checked').forEach(el => el.classList.remove('checked'));
-  ['rebuildDetails','nitrogenDetails','coatingDetails','respringDetails','otherDetails'].forEach(id => document.getElementById(id).classList.remove('visible'));
+  ['rebuildDetails','nitrogenDetails','coatingDetails','respringDetails','otherDetails','partsDetails'].forEach(id => document.getElementById(id).classList.remove('visible'));
+  photos = []; renderPhotos();
   document.getElementById('dateReceived').valueAsDate = new Date();
   document.getElementById('jobNum').value = getNextJobNum();
   document.getElementById('cartNum').value = '';
@@ -626,11 +710,10 @@ function exportCSV() {
     'Vehicle Year','Vehicle Make','Vehicle Model',
     'Shock Brand','Shock Types','Shock Specs','Services Requested',
     'Desired PSI','Desired Spring','Custom Coating Notes','Other Notes',
-    'Spring Length','Exposed Shaft Length','Individual Coil Length',
-    'Crossover Measurement','Reservoir Sticker Dimensions',
     'Body Condition','Shaft Condition','Bearing Condition','Spring Divider Condition',
     'Leaking','Physical Damage','Inspection Notes',
-    'Recommended Service Notes','Customer Approval','Approval Notes'
+    'Recommended Service Notes','Customer Approval','Approval Notes',
+    'Parts Required','Parts Notes'
   ];
 
   const escape = v => {
@@ -644,11 +727,10 @@ function exportCSV() {
     r.vehYear, r.vehMake, r.vehModel,
     r.shockBrand, r.shockTypes, r.shockSpecs, r.serviceItems,
     r.desiredPSI, r.desiredSpring, r.coatingNotes, r.otherNotes || '',
-    r.springLen, r.exposedShaftLen, r.coilLen,
-    r.crossover, r.resDims,
     r.bodyCondition || '', r.shaftCondition || '', r.sealsCondition || '', r.corrosion || '',
     r.leaking || '', r.physicalDamage || '', r.inspectionNotes || '',
-    r.recNotes || '', r.custApproval || '', r.approvalNotes || ''
+    r.recNotes || '', r.custApproval || '', r.approvalNotes || '',
+    r.partsRequired || '', r.partsNotes || ''
   ].map(escape).join(','));
 
   const csv = [headers.join(','), ...rows].join('\n');
