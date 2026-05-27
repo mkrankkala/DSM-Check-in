@@ -151,7 +151,7 @@
     </div>
     <div class="field-row">
       <div class="field"><label>Promised completion date</label><input type="date" id="completionDate"></div>
-      <div class="field"><label>Rush job</label><select id="rushJob"><option value="">-- Select --</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+      <div class="field"><label>Customer expected pickup date</label><input type="date" id="pickupDate"></div>
     </div>
     <div style="display:flex;justify-content:center;margin-top:4px">
       <div class="field" style="width:48%"><label>DK Build's customer</label><select id="dkCustomer"><option value="">-- Select --</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
@@ -172,7 +172,7 @@
   <p class="section-title">Shock details</p>
   <div class="card">
     <div class="field-row single">
-      <div class="field"><label>Shock brand</label><input type="text" id="shockBrand" placeholder="e.g. Fox, King, Bilstein" autocomplete="off"></div>
+      <div class="field"><label>Shock brand</label><select id="shockBrand"><option value="">-- Select --</option><option>Fox</option><option>King</option><option>Bilstein</option><option>Dirt King</option><option>Icon</option><option>Radflo</option><option>ADS</option></select></div>
     </div>
     <div style="margin-top:12px">
       <div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:8px">Shock type</div>
@@ -483,8 +483,8 @@ function submitForm() {
       ts: new Date().toISOString(),
       dateReceived: document.getElementById('dateReceived').value,
       completionDate: document.getElementById('completionDate').value,
-      rushJob: document.getElementById('rushJob').value,
       dkCustomer: document.getElementById('dkCustomer').value,
+      pickupDate: document.getElementById('pickupDate').value,
       custName,
       custPhone: document.getElementById('custPhone').value,
       custEmail: document.getElementById('custEmail').value,
@@ -540,7 +540,6 @@ function submitForm() {
 
   const cardDesc = [
     `📋 JOB DETAILS`,
-    `Rush Job: ${record.rushJob || '—'}`,
     ``,
     `🔧 SHOCK DETAILS`,
     `Brand: ${record.shockBrand || '—'}`,
@@ -573,7 +572,8 @@ function submitForm() {
     token: trelloToken,
     idList: trelloListId,
     name: cardName,
-    desc: cardDesc
+    desc: cardDesc,
+    idLabels: record.partsRequired === 'Yes' ? '6a0f46764d7dfbc3b558c447' : undefined
   });
 
   fetch(`https://api.trello.com/1/cards?${params.toString()}`, {
@@ -658,7 +658,7 @@ function showToast(msg) {
 }
 
 function resetForm() {
-  ['custName','custPhone','custEmail','completionDate','vehYear','vehMake','vehModel','shockBrand','shockSpecs',
+  ['custName','custPhone','custEmail','completionDate','vehYear','vehMake','vehModel','shockSpecs',
    'desiredPSI','rebuildNotes','coatingNotes','desiredSpring','otherNotes',
    'inspectionNotes','recNotes','approvalNotes','partsNotes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('partsYes').classList.remove('checked');
@@ -672,9 +672,9 @@ function resetForm() {
   document.getElementById('dateReceived').valueAsDate = new Date();
   document.getElementById('jobNum').value = getNextJobNum();
   document.getElementById('cartNum').value = '';
-  document.getElementById('rushJob').value = '';
   document.getElementById('dkCustomer').value = '';
-  ['bodyCondition','shaftCondition','sealsCondition','corrosion','leaking','physicalDamage'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pickupDate').value = '';
+  ['bodyCondition','shaftCondition','sealsCondition','corrosion','leaking','physicalDamage','shockBrand'].forEach(id => document.getElementById(id).value = '');
   window.scrollTo(0, 0);
 }
 
@@ -705,7 +705,7 @@ function exportCSV() {
   if (!records.length) { showToast('No records to export'); return; }
 
   const headers = [
-    'Job #','Cart Number','Drop-off Date','Promised Completion Date','Rush Job',"DK Build's Customer",'Customer Name','Phone','Email',
+    'Job #','Cart Number','Drop-off Date','Promised Completion Date',"DK Build's Customer",'Customer Expected Pickup Date','Customer Name','Phone','Email',
     'Vehicle Year','Vehicle Make','Vehicle Model',
     'Shock Brand','Shock Types','Shock Specs','Services Requested',
     'Desired PSI','Desired Spring','Custom Coating Notes','Other Notes',
@@ -722,7 +722,7 @@ function exportCSV() {
   };
 
   const rows = records.map(r => [
-    r.jobNum || '', r.cartNum || '', r.dateReceived, r.completionDate || '', r.rushJob || '', r.dkCustomer || '', r.custName, r.custPhone, r.custEmail,
+    r.jobNum || '', r.cartNum || '', r.dateReceived, r.completionDate || '', r.dkCustomer || '', r.pickupDate || '', r.custName, r.custPhone, r.custEmail,
     r.vehYear, r.vehMake, r.vehModel,
     r.shockBrand, r.shockTypes, r.shockSpecs, r.serviceItems,
     r.desiredPSI, r.desiredSpring, r.coatingNotes, r.otherNotes || '',
