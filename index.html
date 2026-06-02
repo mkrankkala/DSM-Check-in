@@ -172,7 +172,7 @@
   <p class="section-title">Shock details</p>
   <div class="card">
     <div class="field-row single">
-      <div class="field"><label>Shock brand</label><select id="shockBrand"><option value="">-- Select --</option><option>Fox</option><option>King</option><option>Bilstein</option><option>Dirt King</option><option>Icon</option><option>Radflo</option><option>ADS</option><option>Other</option></select></div>
+      <div class="field"><label>Shock make</label><select id="shockBrand"><option value="">-- Select --</option><option>Fox</option><option>King</option><option>Bilstein</option><option>Dirt King</option><option>Icon</option><option>Radflo</option><option>ADS</option><option>Other</option></select></div>
     </div>
     <div style="margin-top:12px">
       <div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:8px">Shock type</div>
@@ -664,7 +664,7 @@ function submitForm() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idValue: shockMakeOptionId })
-      }).then(r => r.text()).then(t => console.log('ShockMake result:', t));
+      });
     }
 
     setText('6a072edbd422aaa5fd92e542', record.custName);
