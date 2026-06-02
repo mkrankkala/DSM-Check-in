@@ -660,10 +660,11 @@ function submitForm() {
     };
     const shockMakeOptionId = shockMakeOptions[record.shockBrand] || null;
     if (shockMakeOptionId) {
-      fetch(`${base}/6a1ee95ca3c5bfba0a1080a2/item?${auth}`, {
-        method: 'PUT', headers: h,
+      fetch(`https://api.trello.com/1/cards/${cardId}/customField/6a1ee95ca3c5bfba0a1080a2/item?key=${trelloKey}&token=${trelloToken}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idValue: shockMakeOptionId })
-      });
+      }).then(r => r.text()).then(t => console.log('ShockMake result:', t));
     }
 
     setText('6a072edbd422aaa5fd92e542', record.custName);
