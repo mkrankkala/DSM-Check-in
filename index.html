@@ -695,7 +695,14 @@ function submitForm() {
     }
 
     setText('6a072edbd422aaa5fd92e542', record.custName);
-    setText('6a072efc3147a9b41d02dbba', record.custPhone);
+    // Phone is a number field in Trello — send digits only
+    const phoneDigits = record.custPhone ? record.custPhone.replace(/\D/g, '') : '';
+    if (phoneDigits) {
+      fetch(`${base}/6a072efc3147a9b41d02dbba/item?${auth}`, {
+        method: 'PUT', headers: h,
+        body: JSON.stringify({ value: { number: phoneDigits } })
+      });
+    }
     setText('6a0ce8f24e8a7b066a91351b', record.custEmail);
     setText('6a072f070c5a35f837f85dc0', [record.vehYear, record.vehMake, record.vehModel].filter(Boolean).join(' '));
     setText('6a072f18d2c66aa12f61c0a9', record.shockTypes ? record.shockTypes.join(', ') : '');
