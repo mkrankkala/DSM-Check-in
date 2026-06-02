@@ -164,8 +164,9 @@
       <div class="field"><label>Promised completion date</label><input type="date" id="completionDate"></div>
       <div class="field"><label>Customer expected pickup date</label><input type="date" id="pickupDate"></div>
     </div>
-    <div style="display:flex;justify-content:center;margin-top:4px">
-      <div class="field" style="width:48%"><label>DK Build's customer</label><select id="dkCustomer"><option value="">-- Select --</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+    <div style="display:flex;gap:12px;margin-top:4px">
+      <div class="field" style="flex:1"><label>Invoice #</label><input type="text" id="invoiceNum" placeholder="e.g. INV-001" autocomplete="off"></div>
+      <div class="field" style="flex:1"><label>DK Build's customer</label><select id="dkCustomer"><option value="">-- Select --</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
     </div>
   </div>
 
@@ -575,6 +576,7 @@ function submitForm() {
       dateReceived: document.getElementById('dateReceived').value,
       completionDate: document.getElementById('completionDate').value,
       dkCustomer: document.getElementById('dkCustomer').value,
+      invoiceNum: document.getElementById('invoiceNum').value,
       pickupDate: document.getElementById('pickupDate').value,
       custName,
       custPhone: document.getElementById('custPhone').value,
@@ -663,7 +665,7 @@ function submitForm() {
     record.partsNotes ? `\n## 🔩 Parts Required\nNotes: ${record.partsNotes}` : '',
   ].filter(line => line !== '').join('\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  const paramsObj = {
+  const cardBody = {
     key: trelloKey,
     token: trelloToken,
     idList: trelloListId,
@@ -671,12 +673,13 @@ function submitForm() {
     desc: cardDesc,
   };
   if (record.completionDate) {
-    paramsObj.due = new Date(record.completionDate + 'T12:00:00-07:00').toISOString();
+    cardBody.due = new Date(record.completionDate + 'T12:00:00-07:00').toISOString();
   }
-  const params = new URLSearchParams(paramsObj);
 
-  fetch(`https://api.trello.com/1/cards?${params.toString()}`, {
+  fetch(`https://api.trello.com/1/cards?key=${trelloKey}&token=${trelloToken}`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cardBody),
   })
   .then(r => {
     if (r.ok) {
@@ -775,6 +778,7 @@ function submitForm() {
     }
 
     setText('6a072edbd422aaa5fd92e542', record.custName);
+    if (record.invoiceNum) setText('6a1f462c55ff14e23db0fb96', record.invoiceNum);
     if (record.custPhone) setText('6a1f0ba0e74342ccaa28c220', record.custPhone);
     setText('6a0ce8f24e8a7b066a91351b', record.custEmail);
     setText('6a072f070c5a35f837f85dc0', [record.vehYear, record.vehMake, record.vehModel].filter(Boolean).join(' '));
@@ -823,6 +827,7 @@ function resetForm() {
   document.getElementById('cartNum').value = '';
   document.getElementById('dkCustomer').value = '';
   document.getElementById('pickupDate').value = '';
+  document.getElementById('invoiceNum').value = '';
   ['bodyCondition','shaftCondition','sealsCondition','corrosion','leaking','physicalDamage','shockBrand'].forEach(id => document.getElementById(id).value = '');
   window.scrollTo(0, 0);
 }
@@ -854,7 +859,7 @@ function exportCSV() {
   if (!records.length) { showToast('No records to export'); return; }
 
   const headers = [
-    'Job #','Cart Number','Drop-off Date','Promised Completion Date',"DK Build's Customer",'Customer Expected Pickup Date','Customer Name','Phone','Email',
+    'Job #','Cart Number','Drop-off Date','Promised Completion Date',"DK Build's Customer",'Invoice #','Customer Expected Pickup Date','Customer Name','Phone','Email',
     'Vehicle Year','Vehicle Make','Vehicle Model',
     'Shock Brand','Shock Types','Shock Specs','Services Requested',
     'Desired PSI','Desired Spring','Custom Coating Notes','Other Notes',
@@ -871,7 +876,7 @@ function exportCSV() {
   };
 
   const rows = records.map(r => [
-    r.jobNum || '', r.cartNum || '', r.dateReceived, r.completionDate || '', r.dkCustomer || '', r.pickupDate || '', r.custName, r.custPhone, r.custEmail,
+    r.jobNum || '', r.cartNum || '', r.dateReceived, r.completionDate || '', r.dkCustomer || '', r.invoiceNum || '', r.pickupDate || '', r.custName, r.custPhone, r.custEmail,
     r.vehYear, r.vehMake, r.vehModel,
     r.shockBrand, r.shockTypes, r.shockSpecs, r.serviceItems,
     r.desiredPSI, r.desiredSpring, r.coatingNotes, r.otherNotes || '',
