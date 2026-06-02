@@ -561,6 +561,7 @@ function submitForm() {
     `Brand: ${record.shockBrand || '—'}`,
     `Specs: ${record.shockSpecs || '—'}`,
     ``,
+    ``,
     `## 🛠 Service Requested`,
     `Services: ${record.serviceItems ? record.serviceItems.join(', ') : '—'}`,
     record.rebuildNotes ? `Rebuild Notes: ${record.rebuildNotes}` : '',
@@ -569,6 +570,7 @@ function submitForm() {
     record.desiredSpring ? `Desired Spring: ${record.desiredSpring}` : '',
     record.revalveNotes ? `Revalve Notes: ${record.revalveNotes}` : '',
     record.otherNotes ? `Other: ${record.otherNotes}` : '',
+    ``,
     ``,
     `## 🔍 External Inspection`,
     `Body: ${record.bodyCondition || '—'}`,
@@ -579,10 +581,11 @@ function submitForm() {
     `Physical Damage: ${record.physicalDamage || '—'}`,
     record.inspectionNotes ? `Notes: ${record.inspectionNotes}` : '',
     ``,
+    ``,
     `## ✅ Recommended Service`,
     record.recNotes ? `Notes: ${record.recNotes}` : '—',
     record.approvalNotes ? `Approval Notes: ${record.approvalNotes}` : '',
-  ].filter(line => line !== '').join('\n');
+  ].filter(line => line !== '').join('\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
   const paramsObj = {
     key: trelloKey,
