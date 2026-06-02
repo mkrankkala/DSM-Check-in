@@ -660,6 +660,7 @@ function submitForm() {
     `## ✅ Recommended Service`,
     record.recNotes ? `Notes: ${record.recNotes}` : '—',
     record.approvalNotes ? `Approval Notes: ${record.approvalNotes}` : '',
+    record.partsNotes ? `\n## 🔩 Parts Required\nNotes: ${record.partsNotes}` : '',
   ].filter(line => line !== '').join('\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
   const paramsObj = {
