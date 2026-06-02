@@ -567,14 +567,17 @@ function submitForm() {
     record.approvalNotes ? `Approval Notes: ${record.approvalNotes}` : '',
   ].filter(line => line !== '').join('\n');
 
-  const params = new URLSearchParams({
+  const paramsObj = {
     key: trelloKey,
     token: trelloToken,
     idList: trelloListId,
     name: cardName,
     desc: cardDesc,
-    ...(record.partsRequired === 'Yes' && { idLabels: ['6a0f46764d7dfbc3b558c447'] })
-  });
+  };
+  if (record.partsRequired === 'Yes') {
+    paramsObj.idLabels = '6a0f46764d7dfbc3b558c447';
+  }
+  const params = new URLSearchParams(paramsObj);
 
   fetch(`https://api.trello.com/1/cards?${params.toString()}`, {
     method: 'POST',
