@@ -196,6 +196,7 @@
     <div class="service-item" id="nitrogenItem" onclick="toggleNitrogen(this)"><div class="check-box"><div class="check-mark"></div></div><span class="service-label">Nitrogen charge</span></div>
     <div class="service-item" id="coatingItem" onclick="toggleCoating(this)"><div class="check-box"><div class="check-mark"></div></div><span class="service-label">Custom coating</span></div>
     <div class="service-item" id="respringItem" onclick="toggleRespring(this)"><div class="check-box"><div class="check-mark"></div></div><span class="service-label">Respring</span></div>
+    <div class="service-item" id="revalveItem" onclick="toggleRevalve(this)"><div class="check-box"><div class="check-mark"></div></div><span class="service-label">Revalve</span></div>
     <div class="service-item" id="otherItem" onclick="toggleOther(this)"><div class="check-box"><div class="check-mark"></div></div><span class="service-label">Other</span></div>
   </div>
 
@@ -231,6 +232,15 @@
       <div class="field">
         <label>Custom coating details</label>
         <textarea id="coatingNotes" rows="4" placeholder="Describe color, finish, areas to coat, any special instructions…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="expandable" id="revalveDetails" style="margin-top:10px">
+    <div class="card" style="margin-bottom:0">
+      <div class="field">
+        <label>Revalve notes</label>
+        <textarea id="revalveNotes" rows="3" placeholder="Customer wants, vehicle setup, etc."></textarea>
       </div>
     </div>
   </div>
@@ -431,6 +441,13 @@ function toggleCoating(el) {
   else { d.classList.remove('visible'); document.getElementById('coatingNotes').value = ''; }
 }
 
+function toggleRevalve(el) {
+  el.classList.toggle('checked');
+  const d = document.getElementById('revalveDetails');
+  if (el.classList.contains('checked')) { d.classList.add('visible'); }
+  else { d.classList.remove('visible'); document.getElementById('revalveNotes').value = ''; }
+}
+
 function toggleRespring(el) {
   el.classList.toggle('checked');
   const d = document.getElementById('respringDetails');
@@ -499,6 +516,7 @@ function submitForm() {
       rebuildNotes: document.getElementById('rebuildNotes').value,
       coatingNotes: document.getElementById('coatingNotes').value,
       desiredSpring: document.getElementById('desiredSpring').value,
+      revalveNotes: document.getElementById('revalveNotes').value,
       otherNotes: document.getElementById('otherNotes').value,
       bodyCondition: document.getElementById('bodyCondition').value,
       shaftCondition: document.getElementById('shaftCondition').value,
@@ -551,6 +569,7 @@ function submitForm() {
     record.desiredPSI ? `Desired PSI: ${record.desiredPSI}` : '',
     record.coatingNotes ? `Coating Notes: ${record.coatingNotes}` : '',
     record.desiredSpring ? `Desired Spring: ${record.desiredSpring}` : '',
+    record.revalveNotes ? `Revalve Notes: ${record.revalveNotes}` : '',
     record.otherNotes ? `Other: ${record.otherNotes}` : '',
     ``,
     `🔍 EXTERNAL INSPECTION`,
@@ -647,8 +666,11 @@ function submitForm() {
       });
     }
 
-    // Shock Make list field
-    const shockMakeOptions = {
+    // Type of Service text field — all selected services
+    const allServices = Array.isArray(record.serviceItems) ? record.serviceItems.join(', ') : (record.serviceItems || '');
+    if (allServices) setText('6a1efd1cb66a268f612ec227', allServices);
+
+    setText('6a072edbd422aaa5fd92e542', record.custName);    const shockMakeOptions = {
       'Fox':      '6a1ee95ca3c5bfba0a1080a3',
       'King':     '6a1ee95ca3c5bfba0a1080a4',
       'Bilstein': '6a1ee96f1cdfac8790c6cf55',
@@ -688,7 +710,7 @@ function showToast(msg) {
 
 function resetForm() {
   ['custName','custPhone','custEmail','completionDate','vehYear','vehMake','vehModel','shockSpecs',
-   'desiredPSI','rebuildNotes','coatingNotes','desiredSpring','otherNotes',
+   'desiredPSI','rebuildNotes','coatingNotes','desiredSpring','revalveNotes','otherNotes',
    'inspectionNotes','recNotes','approvalNotes','partsNotes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('partsYes').classList.remove('checked');
   document.getElementById('partsNo').classList.remove('checked');
@@ -696,7 +718,7 @@ function resetForm() {
   document.getElementById('custApproval').value = '';
   document.getElementById('approvalDetails').classList.remove('visible');
   document.querySelectorAll('.check-item.checked,.service-item.checked').forEach(el => el.classList.remove('checked'));
-  ['rebuildDetails','nitrogenDetails','coatingDetails','respringDetails','otherDetails','partsDetails'].forEach(id => document.getElementById(id).classList.remove('visible'));
+  ['rebuildDetails','nitrogenDetails','coatingDetails','revalveDetails','respringDetails','otherDetails','partsDetails'].forEach(id => document.getElementById(id).classList.remove('visible'));
   photos = []; renderPhotos();
   document.getElementById('dateReceived').valueAsDate = new Date();
   document.getElementById('jobNum').value = getNextJobNum();
