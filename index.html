@@ -573,7 +573,7 @@ function submitForm() {
     idList: trelloListId,
     name: cardName,
     desc: cardDesc,
-    idLabels: record.partsRequired === 'Yes' ? '6a0f46764d7dfbc3b558c447' : undefined
+    ...(record.partsRequired === 'Yes' && { idLabels: ['6a0f46764d7dfbc3b558c447'] })
   });
 
   fetch(`https://api.trello.com/1/cards?${params.toString()}`, {
