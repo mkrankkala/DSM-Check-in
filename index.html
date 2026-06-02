@@ -574,9 +574,6 @@ function submitForm() {
     name: cardName,
     desc: cardDesc,
   };
-  if (record.partsRequired === 'Yes') {
-    paramsObj.idLabels = '6a0f46764d7dfbc3b558c447';
-  }
   const params = new URLSearchParams(paramsObj);
 
   fetch(`https://api.trello.com/1/cards?${params.toString()}`, {
@@ -593,6 +590,15 @@ function submitForm() {
   .then(card => {
     if (!card) return;
     const cardId = card.id;
+
+    // Add Parts Needed label if selected
+    if (record.partsRequired === 'Yes') {
+      fetch(`https://api.trello.com/1/cards/${cardId}/idLabels?key=${trelloKey}&token=${trelloToken}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: '6a0f46764d7dfbc3b558c447' })
+      });
+    }
 
     // Attach photos
     if (photos.length > 0) {
