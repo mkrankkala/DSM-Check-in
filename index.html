@@ -115,6 +115,17 @@
       <div class="field" style="margin-top:12px"><label>Trello List ID</label><input type="text" id="settingListId" placeholder="Paste list ID here" autocomplete="off"></div>
     </div>
     <button class="submit-btn" onclick="saveSettings()" style="margin-top:1rem">Save settings</button>
+
+    <p class="section-title" style="margin-top:1.5rem">Backup & restore</p>
+    <div class="card">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Export saves your credentials and job number to a file. Import restores everything if your browser is cleared.</div>
+      <div style="display:flex;gap:10px">
+        <button onclick="exportSettings()" style="flex:1;padding:12px;background:var(--gold);color:#111;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">⬇ Export settings</button>
+        <button onclick="document.getElementById('importFile').click()" style="flex:1;padding:12px;background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">⬆ Import settings</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importSettings(event)">
+    </div>
+
     <button class="submit-btn" onclick="closeSettings()" style="background:transparent;border:1px solid var(--gold);color:var(--gold);margin-top:8px">Cancel</button>
   </div>
 
@@ -349,6 +360,45 @@
 <div class="toast" id="toast"></div>
 
 <script>
+function exportSettings() {
+  const data = {
+    trelloKey: localStorage.getItem('trelloKey') || '',
+    trelloToken: localStorage.getItem('trelloToken') || '',
+    trelloListId: localStorage.getItem('trelloListId') || '',
+    nextJobNum: localStorage.getItem('nextJobNum') || '1'
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dsm_settings.json';
+  a.click();
+  showToast('Settings exported!');
+}
+
+function importSettings(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.trelloKey) localStorage.setItem('trelloKey', data.trelloKey);
+      if (data.trelloToken) localStorage.setItem('trelloToken', data.trelloToken);
+      if (data.trelloListId) localStorage.setItem('trelloListId', data.trelloListId);
+      if (data.nextJobNum) localStorage.setItem('nextJobNum', data.nextJobNum);
+      document.getElementById('settingKey').value = data.trelloKey || '';
+      document.getElementById('settingToken').value = data.trelloToken || '';
+      document.getElementById('settingListId').value = data.trelloListId || '';
+      document.getElementById('jobNum').value = data.nextJobNum || '1';
+      showToast('Settings restored successfully!');
+    } catch(err) {
+      showToast('Error reading file — make sure it is a valid settings file');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
 function openSettings() {
   document.getElementById('settingKey').value = localStorage.getItem('trelloKey') || '';
   document.getElementById('settingToken').value = localStorage.getItem('trelloToken') || '';
