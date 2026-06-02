@@ -695,8 +695,9 @@ function submitForm() {
     }
 
     setText('6a072edbd422aaa5fd92e542', record.custName);
+    alert('Phone value: ' + (record.custPhone || 'EMPTY'));
     const phoneResult = setText('6a072efc3147a9b41d02dbba', record.custPhone || '');
-    if (phoneResult) phoneResult.then(r => r.text()).then(t => console.log('Phone result:', t));
+    if (phoneResult) phoneResult.then(r => r.text()).then(t => alert('Phone Trello result: ' + t));
     setText('6a0ce8f24e8a7b066a91351b', record.custEmail);
     setText('6a072f070c5a35f837f85dc0', [record.vehYear, record.vehMake, record.vehModel].filter(Boolean).join(' '));
     setText('6a072f18d2c66aa12f61c0a9', record.shockTypes ? record.shockTypes.join(', ') : '');
