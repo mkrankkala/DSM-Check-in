@@ -172,7 +172,7 @@
   <p class="section-title">Shock details</p>
   <div class="card">
     <div class="field-row single">
-      <div class="field"><label>Shock brand</label><select id="shockBrand"><option value="">-- Select --</option><option>Fox</option><option>King</option><option>Bilstein</option><option>Dirt King</option><option>Icon</option><option>Radflo</option><option>ADS</option></select></div>
+      <div class="field"><label>Shock brand</label><select id="shockBrand"><option value="">-- Select --</option><option>Fox</option><option>King</option><option>Bilstein</option><option>Dirt King</option><option>Icon</option><option>Radflo</option><option>ADS</option><option>Other</option></select></div>
     </div>
     <div style="margin-top:12px">
       <div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:8px">Shock type</div>
@@ -644,6 +644,25 @@ function submitForm() {
       fetch(`${base}/6a074ca71110a7452f0ac535/item?${auth}`, {
         method: 'PUT', headers: h,
         body: JSON.stringify({ idValue: cartOptionId })
+      });
+    }
+
+    // Shock Make list field
+    const shockMakeOptions = {
+      'Fox':      '6a1ee95ca3c5bfba0a1080a3',
+      'King':     '6a1ee95ca3c5bfba0a1080a4',
+      'Bilstein': '6a1ee96f1cdfac8790c6cf55',
+      'Dirt King':'6a1ee97330edb88c085e181b',
+      'Icon':     '6a1ee9784fce0d4d5ef2b217',
+      'Radflo':   '6a1ee97b49eb6a8658fb4d54',
+      'ADS':      '6a1ee982b2d447d5324669f3',
+      'Other':    '6a1ee9858f96336f50085762'
+    };
+    const shockMakeOptionId = shockMakeOptions[record.shockBrand] || null;
+    if (shockMakeOptionId) {
+      fetch(`${base}/6a1ee95ca3c5bfba0a1080a2/item?${auth}`, {
+        method: 'PUT', headers: h,
+        body: JSON.stringify({ idValue: shockMakeOptionId })
       });
     }
 
