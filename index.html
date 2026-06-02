@@ -670,6 +670,9 @@ function submitForm() {
     name: cardName,
     desc: cardDesc,
   };
+  if (record.completionDate) {
+    paramsObj.due = new Date(record.completionDate + 'T12:00:00-07:00').toISOString();
+  }
   const params = new URLSearchParams(paramsObj);
 
   fetch(`https://api.trello.com/1/cards?${params.toString()}`, {
