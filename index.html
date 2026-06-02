@@ -364,8 +364,7 @@ function exportSettings() {
   const data = {
     trelloKey: localStorage.getItem('trelloKey') || '',
     trelloToken: localStorage.getItem('trelloToken') || '',
-    trelloListId: localStorage.getItem('trelloListId') || '',
-    nextJobNum: localStorage.getItem('nextJobNum') || '1'
+    trelloListId: localStorage.getItem('trelloListId') || ''
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -385,11 +384,9 @@ function importSettings(e) {
       if (data.trelloKey) localStorage.setItem('trelloKey', data.trelloKey);
       if (data.trelloToken) localStorage.setItem('trelloToken', data.trelloToken);
       if (data.trelloListId) localStorage.setItem('trelloListId', data.trelloListId);
-      if (data.nextJobNum) localStorage.setItem('nextJobNum', data.nextJobNum);
       document.getElementById('settingKey').value = data.trelloKey || '';
       document.getElementById('settingToken').value = data.trelloToken || '';
       document.getElementById('settingListId').value = data.trelloListId || '';
-      document.getElementById('jobNum').value = data.nextJobNum || '1';
       showToast('Settings restored successfully!');
     } catch(err) {
       showToast('Error reading file — make sure it is a valid settings file');
@@ -460,6 +457,33 @@ async function attachPhotosToCard(cardId, trelloKey, trelloToken) {
       body: formData
     });
   }
+}
+
+const JOB_COUNTER_CARD = '6a1f3f9bc1e23b4d20938e22';
+
+async function fetchJobNumFromTrello() {
+  const key = localStorage.getItem('trelloKey');
+  const token = localStorage.getItem('trelloToken');
+  if (!key || !token) return null;
+  try {
+    const r = await fetch(`https://api.trello.com/1/cards/${JOB_COUNTER_CARD}?fields=name&key=${key}&token=${token}`);
+    const data = await r.json();
+    const num = parseInt(data.name);
+    return isNaN(num) ? null : num;
+  } catch(e) { return null; }
+}
+
+async function saveJobNumToTrello(num) {
+  const key = localStorage.getItem('trelloKey');
+  const token = localStorage.getItem('trelloToken');
+  if (!key || !token) return;
+  try {
+    await fetch(`https://api.trello.com/1/cards/${JOB_COUNTER_CARD}?key=${key}&token=${token}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: String(num) })
+    });
+  } catch(e) {}
 }
 
 function getNextJobNum() {
@@ -587,6 +611,7 @@ function submitForm() {
     existing.push(record);
     localStorage.setItem('checkins', JSON.stringify(existing));
     localStorage.setItem('nextJobNum', String(record.jobNum + 1));
+    saveJobNumToTrello(record.jobNum + 1);
     showToast('Record saved!');
   } catch(err) {
     showToast('Error: ' + err.message);
@@ -875,6 +900,13 @@ function deleteRecord(id) {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('dateReceived').valueAsDate = new Date();
   document.getElementById('jobNum').value = getNextJobNum();
+  // Sync job number from Trello
+  fetchJobNumFromTrello().then(num => {
+    if (num !== null) {
+      localStorage.setItem('nextJobNum', String(num));
+      document.getElementById('jobNum').value = num;
+    }
+  });
   document.getElementById('submitBtn').addEventListener('click', function(e) {
     e.preventDefault();
     submitForm();
