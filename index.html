@@ -557,11 +557,12 @@ function submitForm() {
   const cardName = `Job #${record.jobNum} — ${record.custName} | ${[record.vehYear, record.vehMake, record.vehModel].filter(Boolean).join(' ')}`;
 
   const cardDesc = [
-    `**🔧 SHOCK DETAILS**`,
+    `🔧 SHOCK DETAILS`,
     `Brand: ${record.shockBrand || '—'}`,
     `Specs: ${record.shockSpecs || '—'}`,
     ``,
-    `**🛠 SERVICE REQUESTED**`,
+    `---`,
+    `🛠 SERVICE REQUESTED`,
     `Services: ${record.serviceItems ? record.serviceItems.join(', ') : '—'}`,
     record.rebuildNotes ? `Rebuild Notes: ${record.rebuildNotes}` : '',
     record.desiredPSI ? `Desired PSI: ${record.desiredPSI}` : '',
@@ -570,7 +571,8 @@ function submitForm() {
     record.revalveNotes ? `Revalve Notes: ${record.revalveNotes}` : '',
     record.otherNotes ? `Other: ${record.otherNotes}` : '',
     ``,
-    `**🔍 EXTERNAL INSPECTION**`,
+    `---`,
+    `🔍 EXTERNAL INSPECTION`,
     `Body: ${record.bodyCondition || '—'}`,
     `Shaft: ${record.shaftCondition || '—'}`,
     `Bearing: ${record.sealsCondition || '—'}`,
@@ -579,7 +581,8 @@ function submitForm() {
     `Physical Damage: ${record.physicalDamage || '—'}`,
     record.inspectionNotes ? `Notes: ${record.inspectionNotes}` : '',
     ``,
-    `**✅ RECOMMENDED SERVICE**`,
+    `---`,
+    `✅ RECOMMENDED SERVICE`,
     record.recNotes ? `Notes: ${record.recNotes}` : '—',
     record.approvalNotes ? `Approval Notes: ${record.approvalNotes}` : '',
   ].filter(line => line !== '').join('\n');
