@@ -638,15 +638,20 @@ function submitForm() {
     });
 
     // Helper to set a date field
-    const setDate = (fieldId, value) => fetch(`${base}/${fieldId}/item?${auth}`, {
-      method: 'PUT', headers: h,
-      body: JSON.stringify({ value: { date: value ? new Date(value).toISOString() : '' } })
-    });
+    const setDate = (fieldId, value) => {
+      if (!value) return;
+      // Use noon PDT (UTC-7) to avoid date shifting
+      const d = new Date(value + 'T12:00:00-07:00');
+      return fetch(`${base}/${fieldId}/item?${auth}`, {
+        method: 'PUT', headers: h,
+        body: JSON.stringify({ value: { date: d.toISOString() } })
+      });
+    };
 
     // Helper to set a checkbox field
     const setCheck = (fieldId, value) => fetch(`${base}/${fieldId}/item?${auth}`, {
       method: 'PUT', headers: h,
-      body: JSON.stringify({ value: { checked: value === 'Yes' } })
+      body: JSON.stringify({ value: { checked: value === 'Yes' ? 'true' : 'false' } })
     });
 
     // Helper to set a list field by matching option text
@@ -696,6 +701,19 @@ function submitForm() {
     setText('6a072f18d2c66aa12f61c0a9', record.shockTypes ? record.shockTypes.join(', ') : '');
     setDate('6a079a3ec3392a266bf6e7d8', record.dateReceived);
     setDate('6a072f327950081d5c1cce8e', record.completionDate);
+    // Parts Status list field
+    if (record.partsRequired === 'Yes') {
+      fetch(`${base}/6a077de2bf257d69876a85f0/item?${auth}`, {
+        method: 'PUT', headers: h,
+        body: JSON.stringify({ idValue: '6a077de2bf257d69876a85f2' })
+      });
+    } else if (record.partsRequired === 'No') {
+      fetch(`${base}/6a077de2bf257d69876a85f0/item?${auth}`, {
+        method: 'PUT', headers: h,
+        body: JSON.stringify({ idValue: '6a077de2bf257d69876a85f1' })
+      });
+    }
+
     setCheck('6a072fac5df7377e432a1139', record.dkCustomer);
     setCheck('6a0ce93201cd40ba61314c19', record.custApproval === 'Approved' ? 'Yes' : 'No');
   })
