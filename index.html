@@ -593,6 +593,38 @@ async function resumeFromCard(cardId) {
     const shockMake = cfMap['6a1ee95ca3c5bfba0a1080a2'] || '';
     if (shockMake) set('shockBrand', shockMake);
 
+    // Restore shock type checkboxes
+    const shockTypeStr = cfMap['6a072f18d2c66aa12f61c0a9'] || '';
+    if (shockTypeStr) {
+      const shockTypes = shockTypeStr.split(',').map(s => s.trim());
+      document.querySelectorAll('#shockTypes .check-item').forEach(el => {
+        const label = el.querySelector('.check-label, .check-mark')?.parentElement?.querySelector('.check-label')?.textContent?.trim()
+          || el.querySelector('span')?.textContent?.trim();
+        if (shockTypes.some(t => label && label.toLowerCase().includes(t.toLowerCase()))) {
+          el.classList.add('checked');
+        }
+      });
+    }
+
+    // Restore service item checkboxes
+    const serviceStr = cfMap['6a1efd1cb66a268f612ec227'] || '';
+    if (serviceStr) {
+      const services = serviceStr.split(',').map(s => s.trim().toLowerCase());
+      document.querySelectorAll('#serviceItems .service-item').forEach(el => {
+        const label = el.querySelector('.service-label')?.textContent?.trim().toLowerCase();
+        if (label && services.some(s => s.includes(label) || label.includes(s))) {
+          el.classList.add('checked');
+          // Trigger expandable panels for services that have them
+          if (label === 'rebuild') { const d = document.getElementById('rebuildDetails'); if(d) d.classList.add('visible'); }
+          if (label === 'nitrogen charge') { const d = document.getElementById('nitrogenDetails'); if(d) d.classList.add('visible'); }
+          if (label === 'custom coating') { const d = document.getElementById('coatingDetails'); if(d) d.classList.add('visible'); }
+          if (label === 'revalve') { const d = document.getElementById('revalveDetails'); if(d) d.classList.add('visible'); }
+          if (label === 'respring') { const d = document.getElementById('respringDetails'); if(d) d.classList.add('visible'); }
+          if (label === 'other') { const d = document.getElementById('otherDetails'); if(d) d.classList.add('visible'); }
+        }
+      });
+    }
+
     // DK Builds customer checkbox
     const dkVal = cfMap['6a072fac5df7377e432a1139'];
     if (dkVal) set('dkCustomer', dkVal === 'Yes' ? 'Yes' : 'No');
