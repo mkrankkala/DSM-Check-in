@@ -151,6 +151,15 @@
   </div>
 
   <p class="section-title">Customer information</p>
+  <div class="card" style="margin-bottom:.75rem">
+    <div class="field">
+      <label>Resume form <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <select id="resumeForm" onchange="resumeFromCard(this.value)">
+        <option value="">-- Select a pending job --</option>
+      </select>
+    </div>
+    <div id="resumeStatus" style="font-size:11px;color:var(--text-muted);margin-top:6px;display:none"></div>
+  </div>
   <div class="card">
     <div class="field-row">
       <div class="field"><label>Drop-off date</label><input type="date" id="dateReceived"></div>
@@ -488,6 +497,124 @@ async function saveJobNumToTrello(num) {
   } catch(e) {}
 }
 
+const INTAKE_LIST_ID = '6a072df2d6c7b1603fd76a54';
+const PENDING_LABEL_ID = '6a2c85768f436a6d0f1744b9';
+
+async function fetchPendingCards() {
+  const key = localStorage.getItem('trelloKey');
+  const token = localStorage.getItem('trelloToken');
+  if (!key || !token) return;
+
+  try {
+    const r = await fetch(`https://api.trello.com/1/lists/${INTAKE_LIST_ID}/cards?customFieldItems=true&key=${key}&token=${token}`);
+    const cards = await r.json();
+
+    // Filter cards with Pending label
+    const pending = cards.filter(c => c.idLabels && c.idLabels.includes(PENDING_LABEL_ID));
+
+    const select = document.getElementById('resumeForm');
+    // Clear existing options except first
+    while (select.options.length > 1) select.remove(1);
+
+    if (pending.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No pending jobs found';
+      opt.disabled = true;
+      select.appendChild(opt);
+    } else {
+      pending.forEach(card => {
+        const opt = document.createElement('option');
+        opt.value = card.id;
+        opt.textContent = card.name;
+        opt.dataset.card = JSON.stringify({ id: card.id, name: card.name, customFieldItems: card.customFieldItems });
+        select.appendChild(opt);
+      });
+    }
+  } catch(e) {
+    console.log('Could not fetch pending cards:', e);
+  }
+}
+
+async function resumeFromCard(cardId) {
+  if (!cardId) return;
+  const key = localStorage.getItem('trelloKey');
+  const token = localStorage.getItem('trelloToken');
+  const statusEl = document.getElementById('resumeStatus');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Loading job data…';
+
+  try {
+    // Fetch full card with custom fields
+    const r = await fetch(`https://api.trello.com/1/cards/${cardId}?customFieldItems=true&key=${key}&token=${token}`);
+    const card = await r.json();
+
+    // Fetch custom field items
+    const cfR = await fetch(`https://api.trello.com/1/cards/${cardId}/customFieldItems?key=${key}&token=${token}`);
+    const cfItems = await cfR.json();
+
+    // Map custom field IDs to values
+    const cfMap = {};
+    for (const cf of cfItems) {
+      if (cf.value) {
+        cfMap[cf.idCustomField] = cf.value.text || cf.value.date || (cf.value.checked === 'true' ? 'Yes' : 'No') || '';
+      } else if (cf.idValue) {
+        // List type — fetch option value
+        try {
+          const optR = await fetch(`https://api.trello.com/1/customFields/${cf.idCustomField}/options/${cf.idValue}?key=${key}&token=${token}`);
+          const opt = await optR.json();
+          cfMap[cf.idCustomField] = opt.value ? opt.value.text : '';
+        } catch(e) {}
+      }
+    }
+
+    // Populate form fields using known custom field IDs
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+
+    set('custName',       cfMap['6a072edbd422aaa5fd92e542']); // Customer Name
+    set('custPhone',      cfMap['6a1f0ba0e74342ccaa28c220']); // Phone Number
+    set('custEmail',      cfMap['6a0ce8f24e8a7b066a91351b']); // Customer Email
+    set('invoiceNum',     cfMap['6a1f462c55ff14e23db0fb96']); // Invoice #
+    set('completionDate', cfMap['6a072f327950081d5c1cce8e'] ? cfMap['6a072f327950081d5c1cce8e'].substring(0,10) : ''); // Promised Date
+    set('dateReceived',   cfMap['6a079a3ec3392a266bf6e7d8'] ? cfMap['6a079a3ec3392a266bf6e7d8'].substring(0,10) : ''); // Drop-Off Date
+
+    // Vehicle from text field
+    const vehicle = cfMap['6a072f070c5a35f837f85dc0'] || '';
+    if (vehicle) {
+      const parts = vehicle.split(' ');
+      if (parts.length >= 3) {
+        set('vehYear', parts[0]);
+        set('vehMake', parts[1]);
+        set('vehModel', parts.slice(2).join(' '));
+      }
+    }
+
+    // Shock make dropdown
+    const shockMake = cfMap['6a1ee95ca3c5bfba0a1080a2'] || '';
+    if (shockMake) set('shockBrand', shockMake);
+
+    // DK Builds customer checkbox
+    const dkVal = cfMap['6a072fac5df7377e432a1139'];
+    if (dkVal) set('dkCustomer', dkVal === 'Yes' ? 'Yes' : 'No');
+
+    // Cart number
+    const cartVal = cfMap['6a074ca71110a7452f0ac535'];
+    if (cartVal) set('cartNum', cartVal);
+
+    // Job number from card name if it starts with a number
+    const jobMatch = card.name.match(/^Job #?(\d+)/);
+    if (jobMatch) {
+      document.getElementById('jobNum').value = jobMatch[1];
+    }
+
+    statusEl.textContent = '✓ Form populated from: ' + card.name;
+    statusEl.style.color = 'var(--gold)';
+  } catch(e) {
+    statusEl.textContent = 'Error loading job data';
+    statusEl.style.color = 'var(--text-muted)';
+  }
+}
+
 function getNextJobNum() {
   let n = parseInt(localStorage.getItem('nextJobNum') || '1');
   if (isNaN(n) || n < 1) n = 1;
@@ -677,6 +804,17 @@ function submitForm() {
     cardBody.due = new Date(record.completionDate + 'T12:00:00-07:00').toISOString();
   }
 
+  // Check if drop-off date is not today → add Pending label
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); // YYYY-MM-DD in PDT
+  const isPending = record.dateReceived && record.dateReceived !== today;
+  const pendingLabelId = '6a2c85768f436a6d0f1744b9';
+  const partsNeededLabelId = '6a0f46764d7dfbc3b558c447';
+
+  const labels = [];
+  if (isPending) labels.push(pendingLabelId);
+  if (record.partsRequired === 'Yes') labels.push(partsNeededLabelId);
+  if (labels.length > 0) cardBody.idLabels = labels;
+
   fetch(`https://api.trello.com/1/cards?key=${trelloKey}&token=${trelloToken}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -693,15 +831,6 @@ function submitForm() {
   .then(card => {
     if (!card) return;
     const cardId = card.id;
-
-    // Add Parts Needed label if selected
-    if (record.partsRequired === 'Yes') {
-      fetch(`https://api.trello.com/1/cards/${cardId}/idLabels?key=${trelloKey}&token=${trelloToken}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: '6a0f46764d7dfbc3b558c447' })
-      });
-    }
 
     // Attach photos
     if (photos.length > 0) {
@@ -825,6 +954,8 @@ function resetForm() {
   photos = []; renderPhotos();
   document.getElementById('dateReceived').valueAsDate = new Date();
   document.getElementById('jobNum').value = getNextJobNum();
+  document.getElementById('resumeForm').value = '';
+  document.getElementById('resumeStatus').style.display = 'none';
   document.getElementById('cartNum').value = '';
   document.getElementById('dkCustomer').value = '';
   document.getElementById('pickupDate').value = '';
@@ -910,6 +1041,7 @@ function deleteRecord(id) {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('dateReceived').valueAsDate = new Date();
   document.getElementById('jobNum').value = getNextJobNum();
+  fetchPendingCards();
   // Sync job number from Trello
   fetchJobNumFromTrello().then(num => {
     if (num !== null) {
