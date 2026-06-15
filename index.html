@@ -719,7 +719,12 @@ function toggleApprovalDetails(el) {
 
 function getChecked(containerId) {
   return Array.from(document.querySelectorAll('#' + containerId + ' .check-item.checked, #' + containerId + ' .service-item.checked'))
-    .map(el => el.querySelector('.check-label,.service-label').textContent);
+    .map(el => {
+      const label = el.querySelector('.check-label,.service-label').textContent;
+      const qtyInput = el.querySelector('input[type="number"]');
+      const qty = qtyInput ? parseInt(qtyInput.value) || 1 : null;
+      return qty && qty > 1 ? `${label} (${qty})` : label;
+    });
 }
 
 function submitForm() {
