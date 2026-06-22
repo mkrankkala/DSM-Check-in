@@ -986,14 +986,47 @@ function submitForm() {
       const rrCardBody = {
         name: rrCardName,
         idList: '6a39a2508034f988a5f25bac',
-        desc: `Job #${record.jobNum}\nCart: ${record.cartNum || 'N/A'}\nCustomer: ${record.custName}\nPhone: ${record.custPhone || ''}\nVehicle: ${[record.vehYear, record.vehMake, record.vehModel].filter(Boolean).join(' ')}\nInvoice: ${record.invoiceNum || ''}`,
       };
       fetch(`https://api.trello.com/1/cards?key=${trelloKey}&token=${trelloToken}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rrCardBody),
       })
-      .then(r => r.ok ? showToast('R&R card created!') : showToast('R&R card failed'));
+      .then(r => r.ok ? r.json() : Promise.reject('R&R card failed'))
+      .then(rrCard => {
+        showToast('R&R card created!');
+        const rrId = rrCard.id;
+        const rrBase = `https://api.trello.com/1/cards/${rrId}/customField`;
+        const rrAuth = `key=${trelloKey}&token=${trelloToken}`;
+        const rrH = { 'Content-Type': 'application/json' };
+        const rrText = (fieldId, value) => value ? fetch(`${rrBase}/${fieldId}/item?${rrAuth}`, {
+          method: 'PUT', headers: rrH,
+          body: JSON.stringify({ value: { text: String(value) } })
+        }) : null;
+        const rrDate = (fieldId, value) => {
+          if (!value) return;
+          const d = new Date(value + 'T12:00:00-07:00');
+          return fetch(`${rrBase}/${fieldId}/item?${rrAuth}`, {
+            method: 'PUT', headers: rrH,
+            body: JSON.stringify({ value: { date: d.toISOString() } })
+          });
+        };
+        // Customer name
+        rrText('6a072edbd422aaa5fd92e542', record.custName);
+        // Phone
+        rrText('6a1f0ba0e74342ccaa28c220', record.custPhone);
+        // Email
+        rrText('6a0ce8f24e8a7b066a91351b', record.custEmail);
+        // Invoice #
+        rrText('6a1f462c55ff14e23db0fb96', record.invoiceNum);
+        // Vehicle
+        rrText('6a072f070c5a35f837f85dc0', [record.vehYear, record.vehMake, record.vehModel].filter(Boolean).join(' '));
+        // Drop-off date
+        rrDate('6a079a3ec3392a266bf6e7d8', record.dateReceived);
+        // Promised completion date
+        rrDate('6a072f327950081d5c1cce8e', record.completionDate);
+      })
+      .catch(() => showToast('R&R card failed'));
     }
   })
   .finally(() => resetForm());
