@@ -362,6 +362,7 @@
 
   <button class="submit-btn" id="submitBtn">Save check-in record</button>
   <button onclick="window.open('https://mkrankkala.github.io/DSM-SPEC-SHEET/', '_blank')" style="width:100%;padding:15px;background:transparent;border:2px solid var(--gold);color:var(--gold);border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;margin-top:10px;font-family:inherit;letter-spacing:.02em">📋 Shock Spec Sheet</button>
+  <button onclick="printWorkOrder()" style="width:100%;padding:15px;background:transparent;border:2px solid var(--gold);color:var(--gold);border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;margin-top:10px;font-family:inherit;letter-spacing:.02em">🖨️ Print work order</button>
   <button class="secondary-btn" onclick="toggleRecords()">View saved records</button>
   <button class="export-btn" onclick="exportCSV()">Export all records to CSV</button>
   <div class="records-panel" id="recordsPanel"></div>
@@ -1152,6 +1153,236 @@ document.addEventListener('DOMContentLoaded', () => {
     submitForm();
   });
 });
+
+
+function printWorkOrder() {
+  // Gather all field values
+  const get = id => { const el = document.getElementById(id); return el ? (el.value || el.textContent || '').trim() : ''; };
+  const getSel = id => { const el = document.getElementById(id); return el ? (el.options[el.selectedIndex]?.text || '') : ''; };
+  const isChecked = id => { const el = document.getElementById(id); return el ? el.classList.contains('checked') : false; };
+
+  // Customer info
+  const customerName = get('customerName');
+  const customerPhone = get('customerPhone');
+  const customerEmail = get('customerEmail');
+  const invoiceNum = get('invoiceNum');
+  const dropoffDate = get('dropoffDate');
+  const promisedDate = get('promisedDate');
+  const jobNum = get('jobNum');
+  const cartNum = get('cartNum');
+  const dkCustomer = getSel('dkCustomer');
+  const dsmRR = getSel('dsmRR');
+
+  // Vehicle / shock
+  const vehicleInfo = get('vehicleInfo');
+  const shockMake = get('shockMake');
+  const shockSpecs = get('shockSpecs');
+  const shockTypesSel = (() => {
+    const items = document.querySelectorAll('#shockTypes .check-item.checked');
+    return Array.from(items).map(el => {
+      const label = el.querySelector('.check-label')?.textContent?.trim() || '';
+      const qty = el.querySelector('input[type="number"]')?.value || '1';
+      return qty !== '1' ? `${label} (${qty})` : label;
+    }).filter(Boolean).join(', ');
+  })();
+
+  // Services selected
+  const services = [];
+  const serviceDetails = [];
+
+  if (isChecked('rebuildItem')) {
+    services.push('Rebuild');
+    const notes = get('rebuildNotes');
+    if (notes) serviceDetails.push({ label: 'Rebuild notes', value: notes });
+  }
+  if (isChecked('nitrogenItem')) {
+    services.push('Nitrogen charge');
+    const psi = get('desiredPSI');
+    if (psi) serviceDetails.push({ label: 'Desired PSI', value: psi });
+  }
+  if (isChecked('coatingItem')) {
+    services.push('Custom coating');
+    const notes = get('coatingNotes');
+    if (notes) serviceDetails.push({ label: 'Coating details', value: notes });
+  }
+  if (isChecked('respringItem')) {
+    services.push('Respring');
+    const spring = get('desiredSpring');
+    if (spring) serviceDetails.push({ label: 'Desired spring', value: spring });
+  }
+  if (isChecked('revalveItem')) {
+    services.push('Revalve');
+    const notes = get('revalveNotes');
+    if (notes) serviceDetails.push({ label: 'Revalve notes', value: notes });
+  }
+  if (isChecked('otherItem')) {
+    services.push('Other');
+    const notes = get('otherNotes');
+    if (notes) serviceDetails.push({ label: 'Other details', value: notes });
+  }
+
+  // Inspection
+  const bodyCondition = getSel('bodyCondition');
+  const shaftCondition = getSel('shaftCondition');
+  const sealsCondition = getSel('sealsCondition');
+  const springDivider = getSel('corrosion');
+  const leaking = getSel('leaking');
+  const physicalDamage = getSel('physicalDamage');
+  const inspectionNotes = get('inspectionNotes');
+
+  // Approval / parts
+  const approvalStatus = getSel('custApproval');
+  const approvalNotes = get('approvalNotes');
+  const partsStatus = (() => {
+    const yes = document.getElementById('partsYes');
+    const no = document.getElementById('partsNo');
+    if (yes && yes.classList.contains('active')) return 'Yes';
+    if (no && no.classList.contains('active')) return 'No';
+    return '';
+  })();
+  const partsNotes = get('partsNotes');
+
+  // Build service details rows HTML
+  const detailsHtml = serviceDetails.length > 0
+    ? serviceDetails.map(d => `<tr><td class="label">${d.label}</td><td>${d.value}</td></tr>`).join('')
+    : '';
+
+  // Build inspection grid
+  const inspFields = [
+    ['Body condition', bodyCondition],
+    ['Shaft condition', shaftCondition],
+    ['Bearing condition', sealsCondition],
+    ['Spring divider', springDivider],
+    ['Leaking', leaking],
+    ['Physical damage', physicalDamage],
+  ].filter(f => f[1]);
+
+  const inspGrid = inspFields.map(f => `
+    <div class="insp-cell">
+      <div class="insp-label">${f[0]}</div>
+      <div class="insp-val">${f[1]}</div>
+    </div>`).join('');
+
+  // Logo (grab from existing img in the DOM if present, else use stored b64)
+  const logoEl = document.querySelector('.header-bar img, img[src*="base64"][src*="iVBOR"]');
+  const logoSrc = logoEl ? logoEl.src : '';
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Work Order ${jobNum ? '#' + jobNum : ''}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size:11px; color:#1a1a1a; background:#fff; padding:18px 22px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:10px; border-bottom:2px solid #b8892a; margin-bottom:12px; }
+  .logo-area img { max-height:52px; max-width:200px; object-fit:contain; }
+  .logo-area .no-logo { font-size:15px; font-weight:700; color:#b8892a; }
+  .job-num { text-align:right; }
+  .job-num .label { font-size:9px; color:#888; text-transform:uppercase; letter-spacing:.08em; }
+  .job-num .num { font-size:22px; font-weight:600; color:#b8892a; line-height:1; }
+  .job-num .cart { font-size:10px; color:#888; margin-top:2px; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:10px; }
+  .section-label { font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#b8892a; font-weight:600; margin-bottom:6px; }
+  table.info { width:100%; border-collapse:collapse; }
+  table.info td { padding:2px 0; vertical-align:top; }
+  table.info td.label { color:#888; width:42%; }
+  table.info td.val { font-weight:500; }
+  .divider { border:none; border-top:0.5px solid #ddd; margin:10px 0; }
+  .services-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .service-badge { border:1px solid #b8892a; color:#b8892a; border-radius:3px; padding:2px 8px; font-size:10px; font-weight:600; }
+  .detail-table { width:100%; border-collapse:collapse; margin-top:4px; }
+  .detail-table td { padding:3px 6px; border:0.5px solid #e0e0e0; vertical-align:top; font-size:10px; }
+  .detail-table td.label { color:#888; width:30%; background:#f9f9f9; }
+  .detail-table td.val { white-space:pre-wrap; }
+  .insp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-bottom:8px; }
+  .insp-cell { border:0.5px solid #ddd; border-radius:3px; padding:5px 7px; }
+  .insp-label { font-size:9px; color:#888; margin-bottom:2px; }
+  .insp-val { font-weight:500; font-size:10px; }
+  .notes-box { border:0.5px solid #ddd; border-radius:3px; padding:6px 8px; min-height:32px; font-size:10px; white-space:pre-wrap; }
+  .bottom-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px; }
+  .footer { margin-top:10px; padding-top:8px; border-top:0.5px solid #ddd; font-size:9px; color:#aaa; }
+  @media print {
+    body { padding:12px 16px; }
+    @page { margin: 0.4in; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-area">
+    ${logoSrc ? `<img src="${logoSrc}" alt="Down South Motorsports">` : '<div class="no-logo">Down South Motorsports</div>'}
+  </div>
+  <div class="job-num">
+    <div class="label">Job number</div>
+    <div class="num">${jobNum ? '#' + jobNum : '—'}</div>
+    <div class="cart">Cart <strong>${cartNum || '—'}</strong></div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div>
+    <div class="section-label">Customer information</div>
+    <table class="info">
+      ${customerName ? `<tr><td class="label">Name</td><td class="val">${customerName}</td></tr>` : ''}
+      ${customerPhone ? `<tr><td class="label">Phone</td><td class="val">${customerPhone}</td></tr>` : ''}
+      ${customerEmail ? `<tr><td class="label">Email</td><td class="val">${customerEmail}</td></tr>` : ''}
+      ${invoiceNum ? `<tr><td class="label">Invoice #</td><td class="val">${invoiceNum}</td></tr>` : ''}
+      ${dropoffDate ? `<tr><td class="label">Drop-off</td><td class="val">${dropoffDate}</td></tr>` : ''}
+      ${promisedDate ? `<tr><td class="label">Promised</td><td class="val">${promisedDate}</td></tr>` : ''}
+      ${dkCustomer !== 'No' ? `<tr><td class="label">DK customer</td><td class="val">${dkCustomer}</td></tr>` : ''}
+      ${dsmRR !== 'No' ? `<tr><td class="label">DSM R&R</td><td class="val">${dsmRR}</td></tr>` : ''}
+    </table>
+  </div>
+  <div>
+    <div class="section-label">Vehicle &amp; shock</div>
+    <table class="info">
+      ${vehicleInfo ? `<tr><td class="label">Vehicle</td><td class="val">${vehicleInfo}</td></tr>` : ''}
+      ${shockMake ? `<tr><td class="label">Shock make</td><td class="val">${shockMake}</td></tr>` : ''}
+      ${shockTypesSel ? `<tr><td class="label">Shock type</td><td class="val">${shockTypesSel}</td></tr>` : ''}
+      ${shockSpecs ? `<tr><td class="label">Specs</td><td class="val">${shockSpecs}</td></tr>` : ''}
+    </table>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section-label">Service requested</div>
+${services.length > 0 ? `<div class="services-row">${services.map(s => `<span class="service-badge">✓ ${s}</span>`).join('')}</div>` : '<div style="color:#888;font-size:10px;margin-bottom:6px;">None selected</div>'}
+
+${detailsHtml ? `<table class="detail-table"><tbody>${detailsHtml}</tbody></table>` : ''}
+
+<hr class="divider">
+
+<div class="section-label">External inspection</div>
+${inspGrid ? `<div class="insp-grid">${inspGrid}</div>` : ''}
+${inspectionNotes ? `<div style="margin-bottom:4px;font-size:9px;color:#888;">Inspection notes</div><div class="notes-box">${inspectionNotes}</div>` : ''}
+
+<hr class="divider">
+
+<div class="bottom-row">
+  <div>
+    <div class="section-label">Customer approval</div>
+    <div style="font-weight:500;font-size:11px;margin-bottom:4px;">${approvalStatus || '—'}</div>
+    ${approvalNotes ? `<div class="notes-box" style="margin-top:4px;">${approvalNotes}</div>` : ''}
+  </div>
+  <div>
+    <div class="section-label">Parts required</div>
+    <div style="font-weight:500;font-size:11px;margin-bottom:4px;">${partsStatus || '—'}</div>
+    ${partsNotes ? `<div class="notes-box" style="margin-top:4px;">${partsNotes}</div>` : ''}
+  </div>
+</div>
+
+<div class="footer">Printed ${new Date().toLocaleDateString()} — Down South Motorsports</div>
+
+<script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`);
+  printWindow.document.close();
+}
+
 </script>
 </body>
 </html>
