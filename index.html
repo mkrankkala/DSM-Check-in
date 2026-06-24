@@ -1026,6 +1026,22 @@ function submitForm() {
         rrDate('6a079a3ec3392a266bf6e7d8', record.dateReceived);
         // Promised completion date
         rrDate('6a072f327950081d5c1cce8e', record.completionDate);
+
+        // Cross-link: attach the original intake card's URL to the R&R card.
+        // Trello recognizes a Trello card URL as an attachment and shows a live link-back to that card.
+        if (card.url) {
+          fetch(`https://api.trello.com/1/cards/${rrId}/attachments?key=${trelloKey}&token=${trelloToken}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: card.url, name: 'Original intake card' })
+          }).catch(() => {});
+          // Also attach the R&R card's URL back onto the intake card, so it's a two-way reference.
+          fetch(`https://api.trello.com/1/cards/${cardId}/attachments?key=${trelloKey}&token=${trelloToken}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: rrCard.url, name: 'R&R card' })
+          }).catch(() => {});
+        }
       })
       .catch(() => showToast('R&R card failed'));
     }
