@@ -845,6 +845,9 @@ function submitForm() {
   if (record.completionDate) {
     cardBody.due = new Date(record.completionDate + 'T12:00:00-07:00').toISOString();
   }
+  if (record.dateReceived) {
+    cardBody.start = new Date(record.dateReceived + 'T12:00:00-07:00').toISOString();
+  }
 
   // Check if drop-off date is not today → add Pending label
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); // YYYY-MM-DD in PDT
