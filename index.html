@@ -645,6 +645,80 @@ async function resumeFromCard(cardId) {
     statusEl.style.color = 'var(--gold)';
     // Store the card ID so submitForm updates instead of creating a new card
     window._resumedCardId = cardId;
+
+    // --- Parse the card description to restore remaining fields ---
+    const desc = card.desc || '';
+    const line = (prefix) => {
+      const m = desc.match(new RegExp(`^${prefix}:\\s*(.+)$`, 'm'));
+      return m ? m[1].trim() : '';
+    };
+
+    // Shock specs
+    const shockSpecs = line('Specs');
+    if (shockSpecs && shockSpecs !== '—') set('shockSpecs', shockSpecs);
+
+    // Service detail sub-fields
+    const rebuildNotes = line('Rebuild Notes');
+    if (rebuildNotes) set('rebuildNotes', rebuildNotes);
+
+    const desiredPSI = line('Desired PSI');
+    if (desiredPSI) set('desiredPSI', desiredPSI);
+
+    const coatingNotes = line('Coating Notes');
+    if (coatingNotes) set('coatingNotes', coatingNotes);
+
+    const desiredSpring = line('Desired Spring');
+    if (desiredSpring) set('desiredSpring', desiredSpring);
+
+    const revalveNotes = line('Revalve Notes');
+    if (revalveNotes) set('revalveNotes', revalveNotes);
+
+    const otherNotes = line('Other');
+    if (otherNotes) set('otherNotes', otherNotes);
+
+    // External inspection dropdowns
+    const setDropdown = (id, val) => {
+      if (!val || val === '—') return;
+      const el = document.getElementById(id);
+      if (!el) return;
+      for (const opt of el.options) {
+        if (opt.value === val || opt.text === val) { el.value = opt.value; break; }
+      }
+    };
+    setDropdown('bodyCondition',  line('Body'));
+    setDropdown('shaftCondition', line('Shaft'));
+    setDropdown('sealsCondition', line('Bearing'));
+    setDropdown('corrosion',      line('Spring Divider'));
+    setDropdown('leaking',        line('Leaking'));
+    setDropdown('physicalDamage', line('Physical Damage'));
+
+    const inspectionNotes = line('Notes');
+    if (inspectionNotes) set('inspectionNotes', inspectionNotes);
+
+    // Recommended service / approval
+    const recMatch = desc.match(/^##\s*✅ Recommended Service\n([\s\S]*?)(?:\n##|$)/m);
+    if (recMatch) {
+      const recBlock = recMatch[1];
+      const notesMatch = recBlock.match(/^Notes:\s*(.+)$/m);
+      if (notesMatch) set('recNotes', notesMatch[1].trim());
+      const approvalNotesMatch = recBlock.match(/^Approval Notes:\s*(.+)$/m);
+      if (approvalNotesMatch) set('approvalNotes', approvalNotesMatch[1].trim());
+    }
+
+    // Parts notes
+    const partsMatch = desc.match(/^##\s*🔩 Parts Required\nNotes:\s*(.+)$/m);
+    if (partsMatch) {
+      set('partsNotes', partsMatch[1].trim());
+      // Also visually check the "Yes" parts button
+      const partsYes = document.getElementById('partsYes');
+      if (partsYes && !partsYes.classList.contains('checked')) partsYes.classList.add('checked');
+      const partsDetails = document.getElementById('partsDetails');
+      if (partsDetails) partsDetails.classList.add('visible');
+    }
+
+    // DSM R&R
+    const dsmRRVal = cfMap['6a077de2bf257d69876a85f0'];
+    if (dsmRRVal) setDropdown('dsmRR', dsmRRVal);
   } catch(e) {
     statusEl.textContent = 'Error loading job data';
     statusEl.style.color = 'var(--text-muted)';
