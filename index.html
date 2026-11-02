@@ -199,10 +199,22 @@
     <div style="margin-top:12px">
       <div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:8px">Shock type <span style="font-weight:400;color:var(--text-dim)">(Please select qty)</span></div>
       <div class="checkbox-grid" id="shockTypes">
-        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><div class="check-mark"></div></div><span class="check-label">Bypass shock</span><input type="number" min="1" max="20" value="1" onclick="event.stopPropagation()" style="width:44px;padding:4px 6px;font-size:13px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--gold);margin-left:auto;-webkit-appearance:none"></div>
-        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><div class="check-mark"></div></div><span class="check-label">Coilover shock</span><input type="number" min="1" max="20" value="1" onclick="event.stopPropagation()" style="width:44px;padding:4px 6px;font-size:13px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--gold);margin-left:auto;-webkit-appearance:none"></div>
-        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><div class="check-mark"></div></div><span class="check-label">Smooth body shock</span><input type="number" min="1" max="20" value="1" onclick="event.stopPropagation()" style="width:44px;padding:4px 6px;font-size:13px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--gold);margin-left:auto;-webkit-appearance:none"></div>
-        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><div class="check-mark"></div></div><span class="check-label">Bump stop</span><input type="number" min="1" max="20" value="1" onclick="event.stopPropagation()" style="width:44px;padding:4px 6px;font-size:13px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--gold);margin-left:auto;-webkit-appearance:none"></div>
+        <div class="shock-type-cell">
+          <div class="check-item" onclick="toggleShockType(this)"><div class="check-box"><div class="check-mark"></div></div><span class="check-label">Bypass shock</span><input type="number" min="1" max="20" value="1" onclick="event.stopPropagation()" style="width:44px;padding:4px 6px;font-size:13px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--gold);margin-left:auto;-webkit-appearance:none"></div>
+          <div class="expandable shock-size-row field" id="sizeBypass" data-type="Bypass shock"><input type="text" class="shock-size-input" placeholder="Size, e.g. 3.0 x 14&quot; 3-tube" autocomplete="off" style="margin-top:6px"></div>
+        </div>
+        <div class="shock-type-cell">
+          <div class="check-item" onclick="toggleShockType(this)"><div class="check-box"><div class="check-mark"></div></div><span class="check-label">Coilover shock</span><input type="number" min="1" max="20" value="1" onclick="event.stopPropagation()" style="width:44px;padding:4px 6px;font-size:13px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--gold);margin-left:auto;-webkit-appearance:none"></div>
+          <div class="expandable shock-size-row field" id="sizeCoilover" data-type="Coilover shock"><input type="text" class="shock-size-input" placeholder="Size, e.g. 2.5 x 16&quot;" autocomplete="off" style="margin-top:6px"></div>
+        </div>
+        <div class="shock-type-cell">
+          <div class="check-item" onclick="toggleShockType(this)"><div class="check-box"><div class="check-mark"></div></div><span class="check-label">Smooth body shock</span><input type="number" min="1" max="20" value="1" onclick="event.stopPropagation()" style="width:44px;padding:4px 6px;font-size:13px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--gold);margin-left:auto;-webkit-appearance:none"></div>
+          <div class="expandable shock-size-row field" id="sizeSmooth" data-type="Smooth body shock"><input type="text" class="shock-size-input" placeholder="Size, e.g. 2.0 x 10&quot;" autocomplete="off" style="margin-top:6px"></div>
+        </div>
+        <div class="shock-type-cell">
+          <div class="check-item" onclick="toggleShockType(this)"><div class="check-box"><div class="check-mark"></div></div><span class="check-label">Bump stop</span><input type="number" min="1" max="20" value="1" onclick="event.stopPropagation()" style="width:44px;padding:4px 6px;font-size:13px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--gold);margin-left:auto;-webkit-appearance:none"></div>
+          <div class="expandable shock-size-row field" id="sizeBump" data-type="Bump stop"><input type="text" class="shock-size-input" placeholder="Size, e.g. 2.0 x 3&quot;" autocomplete="off" style="margin-top:6px"></div>
+        </div>
       </div>
     </div>
     <div class="field" style="margin-top:12px">
@@ -607,6 +619,7 @@ async function resumeFromCard(cardId) {
         }
       });
     }
+    updateShockSizeFields();
 
     // Restore service item checkboxes
     const serviceStr = cfMap['6a1efd1cb66a268f612ec227'] || '';
@@ -656,6 +669,18 @@ async function resumeFromCard(cardId) {
     // Shock specs
     const shockSpecs = line('Specs');
     if (shockSpecs && shockSpecs !== '—') set('shockSpecs', shockSpecs);
+
+    // Shock sizes ("Bypass shock: 3.0 x 14; Bump stop: 2.0 x 3")
+    const sizesStr = line('Sizes');
+    if (sizesStr && sizesStr !== '—') {
+      sizesStr.split(';').forEach(part => {
+        const i = part.indexOf(':');
+        if (i < 0) return;
+        const type = part.slice(0, i).trim(), val = part.slice(i + 1).trim();
+        const row = document.querySelector(`#shockTypes .shock-size-row[data-type="${type}"]`);
+        if (row) { row.classList.add('visible'); row.querySelector('input').value = val; }
+      });
+    }
 
     // Service detail sub-fields
     const rebuildNotes = line('Rebuild Notes');
@@ -732,6 +757,29 @@ function getNextJobNum() {
 }
 
 function toggleCheck(el){el.classList.toggle('checked');}
+
+// Show a size box under the shock type grid for each checked shock type
+function toggleShockType(el) {
+  el.classList.toggle('checked');
+  updateShockSizeFields();
+}
+function updateShockSizeFields() {
+  const checked = Array.from(document.querySelectorAll('#shockTypes .check-item.checked'))
+    .map(el => el.querySelector('.check-label').textContent.trim());
+  document.querySelectorAll('#shockTypes .shock-size-row').forEach(row => {
+    const on = checked.includes(row.dataset.type);
+    row.classList.toggle('visible', on);
+    if (!on) row.querySelector('input').value = '';
+  });
+}
+// Returns e.g. "Bypass shock: 3.0 x 14; Bump stop: 2.0 x 3"
+function getShockSizes() {
+  return Array.from(document.querySelectorAll('#shockTypes .shock-size-row.visible'))
+    .map(row => {
+      const v = row.querySelector('input').value.trim();
+      return v ? `${row.dataset.type}: ${v}` : '';
+    }).filter(Boolean).join('; ');
+}
 
 function toggleRebuild(el) {
   el.classList.toggle('checked');
@@ -831,6 +879,7 @@ function submitForm() {
       shockBrand: document.getElementById('shockBrand').value,
       shockTypes: getChecked('shockTypes'),
       shockSpecs: document.getElementById('shockSpecs').value,
+      shockSizes: getShockSizes(),
       serviceItems: getChecked('serviceItems'),
       desiredPSI: document.getElementById('desiredPSI').value,
       rebuildNotes: document.getElementById('rebuildNotes').value,
@@ -880,6 +929,7 @@ function submitForm() {
   const cardDesc = [
     `## 🔧 Shock Details`,
     `Brand: ${record.shockBrand || '—'}`,
+    `Sizes: ${record.shockSizes || '—'}`,
     `Specs: ${record.shockSpecs || '—'}`,
     ``,
     ``,
@@ -1142,6 +1192,7 @@ function resetForm() {
   document.getElementById('custApproval').value = '';
   document.getElementById('approvalDetails').classList.remove('visible');
   document.querySelectorAll('.check-item.checked,.service-item.checked').forEach(el => el.classList.remove('checked'));
+  updateShockSizeFields();
   ['rebuildDetails','nitrogenDetails','coatingDetails','revalveDetails','respringDetails','otherDetails','partsDetails'].forEach(id => document.getElementById(id).classList.remove('visible'));
   photos = []; renderPhotos();
   document.getElementById('dateReceived').valueAsDate = new Date();
@@ -1185,7 +1236,7 @@ function exportCSV() {
   const headers = [
     'Job #','Cart Number','Drop-off Date','Promised Completion Date',"DK Build's Customer",'Invoice #','Customer Expected Pickup Date','Customer Name','Phone','Email',
     'Vehicle Year','Vehicle Make','Vehicle Model',
-    'Shock Brand','Shock Types','Shock Specs','Services Requested',
+    'Shock Brand','Shock Types','Shock Sizes','Shock Specs','Services Requested',
     'Desired PSI','Desired Spring','Custom Coating Notes','Other Notes',
     'Body Condition','Shaft Condition','Bearing Condition','Spring Divider Condition',
     'Leaking','Physical Damage','Inspection Notes',
@@ -1202,7 +1253,7 @@ function exportCSV() {
   const rows = records.map(r => [
     r.jobNum || '', r.cartNum || '', r.dateReceived, r.completionDate || '', r.dkCustomer || '', r.invoiceNum || '', r.pickupDate || '', r.custName, r.custPhone, r.custEmail,
     r.vehYear, r.vehMake, r.vehModel,
-    r.shockBrand, r.shockTypes, r.shockSpecs, r.serviceItems,
+    r.shockBrand, r.shockTypes, r.shockSizes || '', r.shockSpecs, r.serviceItems,
     r.desiredPSI, r.desiredSpring, r.coatingNotes, r.otherNotes || '',
     r.bodyCondition || '', r.shaftCondition || '', r.sealsCondition || '', r.corrosion || '',
     r.leaking || '', r.physicalDamage || '', r.inspectionNotes || '',
@@ -1270,6 +1321,7 @@ function printWorkOrder() {
   const vehicleInfo = get('vehicleInfo');
   const shockMake = get('shockMake');
   const shockSpecs = get('shockSpecs');
+  const shockSizes = getShockSizes();
   const shockTypesSel = (() => {
     const items = document.querySelectorAll('#shockTypes .check-item.checked');
     return Array.from(items).map(el => {
@@ -1440,6 +1492,7 @@ function printWorkOrder() {
       ${vehicleInfo ? `<tr><td class="label">Vehicle</td><td class="val">${vehicleInfo}</td></tr>` : ''}
       ${shockMake ? `<tr><td class="label">Shock make</td><td class="val">${shockMake}</td></tr>` : ''}
       ${shockTypesSel ? `<tr><td class="label">Shock type</td><td class="val">${shockTypesSel}</td></tr>` : ''}
+      ${shockSizes ? `<tr><td class="label">Shock size</td><td class="val">${shockSizes}</td></tr>` : ''}
       ${shockSpecs ? `<tr><td class="label">Specs</td><td class="val">${shockSpecs}</td></tr>` : ''}
     </table>
   </div>
